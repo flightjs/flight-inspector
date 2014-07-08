@@ -20,6 +20,10 @@ function getSelectedComponent() {
     // Devtools doesn't let you select the document, so use the <html> node
     var target = ($0 === document.lastChild ? document : $0);
 
+    if (!window.registry) {
+        return new Error('Cannot find registry.')
+    }
+
     return (_F = window.registry.components.filter(function (componentInfo) {
         return componentInfo.isAttachedTo(target);
     }).reduce(function (memo, componentInfo) {
