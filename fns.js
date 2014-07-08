@@ -3,6 +3,7 @@
  */
 
 function registry() {
+    if (window.registry) return;
     require(['flight/lib/registry'], function (registry) {
         window.registry = registry;
     });
@@ -19,7 +20,7 @@ function getSelectedComponent() {
     // Devtools doesn't let you select the document, so use the <html> node
     var target = ($0 === document.lastChild ? document : $0);
 
-    return (_F = registry.components.filter(function (componentInfo) {
+    return (_F = window.registry.components.filter(function (componentInfo) {
         return componentInfo.isAttachedTo(target);
     }).reduce(function (memo, componentInfo) {
         if (componentInfo.component.toString().length) {
