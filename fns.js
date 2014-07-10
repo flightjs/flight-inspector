@@ -22,7 +22,11 @@ function init() {
     */}
 
     function templateCss() {/*
+        .show-flight-inspector-notifier .flight-inspector-notifier {
+            display: block;
+        }
         .flight-inspector-notifier {
+            display: none;
             z-index: 100000;
             position: absolute;
             background: rgba(0,0,0,.5);
@@ -268,10 +272,10 @@ function getSelectedComponent() {
     }
 
     // Devtools doesn't let you select the document, so use the <html> node
-    var target = ($0 === document.lastChild ? document : $0);
+    var target = ($0 === document.documentElement ? document : $0);
 
-    if (!window.flight.registry) {
-        return new Error('Cannot find registry.')
+    if (!window.flight || !window.flight.registry) {
+        return ['Cannot find registry. Please choose another element or refresh the page.'];
     }
 
     return (_F = window.flight.registry.components.filter(function (componentInfo) {
@@ -300,8 +304,8 @@ function getDetachedComponents() {
         };
     }
 
-    if (!window.flight.registry) {
-        return new Error('Cannot find registry.')
+    if (!window.flight || !window.flight.registry) {
+        return ['Cannot find registry. Please choose another element or refresh the page.'];
     }
 
     return (_F = window.flight.registry.components.filter(function (componentInfo) {
@@ -323,4 +327,11 @@ function getDetachedComponents() {
         }
         return memo;
     }, {}));
+}
+
+function toggleEventNotifier() {
+    document.documentElement.classList.toggle('show-flight-inspector-notifier');
+}
+function getEventNotifierToggleState() {
+    return document.documentElement.classList.contains('show-flight-inspector-notifier');
 }
