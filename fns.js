@@ -21,7 +21,7 @@ function init() {
            class="flight-inspector-notifier__event"
            data-action="{{action}}"
            data-description="{{description}}">
-            {{action}} {{description}}
+            {{description}}
         </a>
     */}
 
@@ -33,7 +33,6 @@ function init() {
             display: none;
             z-index: 100000;
             position: absolute;
-            background: rgba(0,0,0,.5);
             font: 12px/1.2 monospace;
             color: white;
             text-shadow: 0 0 1px black;
@@ -41,20 +40,19 @@ function init() {
             width: 20em;
             overflow-y: scroll;
             overflow-x: hidden;
-            border-bottom-right-radius: 4px;
             border-top: none;
-            opacity: 0.5;
-            transition: opacity 100ms linear;
+            opacity: 0.3;
         }
         .flight-inspector-notifier:hover {
             opacity: 1;
         }
         .flight-inspector-notifier__event {
+            background: rgba(0,0,0,.7);
             display: block;
             color: white;
             text-decoration: none;
             padding: 0.1em 0.2em;
-            border-top: 1px solid rgba(0,0,0,.5);
+            border-top: 1px solid black;
             overflow: hidden;
             white-space: nowrap;
             word-wrap: normal;
@@ -62,7 +60,7 @@ function init() {
             transition: background-color 100ms linear;
         }
         .flight-inspector-notifier__event:hover {
-            background-color: rgba(0,0,0,.8);
+            background-color: black;
             color: white;
             text-decoration: none;
         }
@@ -79,6 +77,13 @@ function init() {
         .flight-inspector-notifier__event--clicked,
         .flight-inspector-notifier__event--clicked:hover {
             color: rgba(255,255,255,0.8);
+        }
+        .flight-inspector-notifier__event[data-action="sync-group"] {
+            color: transparent;
+            text-shadow: none;
+            background: rgba(100,255,100,.4);
+            height: 0.2em;
+            pointer-event: none;
         }
     */}
 
@@ -121,9 +126,8 @@ function init() {
                     e.currentTarget.classList.add('flight-inspector-notifier__event--clicked');
                     var event = this.eventData.get(e.currentTarget);
                     console.info(
-                        '%i %s %s %O',
+                        '%i %s %O',
                         event.events.length,
-                        event.action,
                         event.description,
                         event.events.map(function (event) {
                             return event.data;
@@ -281,6 +285,8 @@ function init() {
         window.flight.registry = registry;
         compose.mixin(registry, [advice.withAdvice]);
 
+        var currentGroup = [];
+
         registry.before('trigger', function (node, event, data) {
             /**
              * event
@@ -298,16 +304,29 @@ function init() {
             }
             try {
                 var notifier = Notifier.getOrCreateForNode(node);
-                notifier.add({
+                var eventData = {
                     action: 'trigger',
-                    description: event,
+                    description: 'trigger ' + event,
                     data: {
                         component: this,
                         event: event,
                         node: node,
                         data: data
                     }
-                });
+                };
+                notifier.add(eventData);
+
+                if (!currentGroup.length) {
+                    setTimeout(function () {
+                        notifier.add({
+                            action: 'sync-group',
+                            description: 'Synchronous group of events',
+                            data: currentGroup
+                        });
+                        currentGroup = [];
+                    }, 0);
+                }
+                currentGroup.push(eventData);
             } catch (e) {
                 console.error(e.stack);
             }
