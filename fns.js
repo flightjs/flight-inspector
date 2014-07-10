@@ -107,7 +107,15 @@ function init() {
             .on('click', '.flight-inspector-notifier__event', function (e) {
                 if (this.eventData.has(e.currentTarget)) {
                     var event = this.eventData.get(e.currentTarget);
-                    console.info('%i %s %s %O', event.data.length, event.action, event.description, event.data);
+                    console.info(
+                        '%i %s %s %O',
+                        event.events.length,
+                        event.action,
+                        event.description,
+                        event.events.map(function (event) {
+                            return event.data;
+                        })
+                    );
                 }
             }.bind(this));
     }
@@ -134,9 +142,9 @@ function init() {
         var matchedEventsData = (this.eventData.get(eventElem) || {
             action: event.action,
             description: event.description,
-            data: []
+            events: []
         });
-        matchedEventsData.data.push(event);
+        matchedEventsData.events.push(event);
         this.eventData.set(eventElem, matchedEventsData);
 
         // TODO This will clear the element even if it's updating
