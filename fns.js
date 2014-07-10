@@ -285,3 +285,36 @@ function getSelectedComponent() {
         return memo;
     }, {}));
 }
+
+function getDetachedComponents() {
+    function transformInstanceInfo(instanceInfo) {
+        return {
+            events: instanceInfo.events,
+            instance: instanceInfo.instance
+        };
+    }
+
+    if (!window.flightRegistry) {
+        return new Error('Cannot find registry.')
+    }
+
+    return (_F = window.flightRegistry.components.filter(function (componentInfo) {
+        return componentInfo.attachedTo.some(function (elem) {
+            return (elem !== document && !elem.parentNode);
+        });
+    }).reduce(function (memo, componentInfo) {
+        if (componentInfo.component.toString().length) {
+            memo[componentInfo.component.toString()] =
+                Object.keys(componentInfo.instances)
+                    .map(function (id) {
+                        return componentInfo.instances[id];
+                    })
+                    .filter(function (instanceInfo) {
+                        return (instanceInfo.instance.node !== document &&
+                                !instanceInfo.instance.node.parentNode);
+                    })
+                    .map(transformInstanceInfo);
+        }
+        return memo;
+    }, {}));
+}
