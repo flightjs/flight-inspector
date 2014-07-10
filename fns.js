@@ -205,25 +205,23 @@ function init() {
         requestAnimationFrame(this.tick.bind(this, from || Date.now(), false));
     };
 
-    require([
-        'flight/lib/registry',
-        'flight/lib/advice',
-        'flight/lib/compose'
-    ], function (registry, advice, compose) {
-        window.flightRegistry = registry;
-        compose.mixin(window.flightRegistry, [advice.withAdvice]);
+    /**
+     * Hook Flight
+     */
 
-        var hook = {};
-        ['before', 'after'].forEach(function (advice) {
-            hook[advice] = function (obj, method, cb) {
-                obj.around(['hook', advice, method].join('-'), function (original) {
-                    cb.apply(this, [].slice.call(arguments, 1));
-                    original.apply(this, [].slice.call(arguments, 1));
-                });
-            };
-        });
+    function getFlight(cb) {
+        if (window.flight) {
+            return setTimeout(cb.bind(this, window.flight.registry, window.flight.advice, window.flight.compose), 0);
+        }
+        require(['flight/lib/registry', 'flight/lib/advice', 'flight/lib/compose'], cb)
+    }
 
-        hook.before(registry, 'trigger', function (node, event, data) {
+    getFlight(function (registry, advice, compose) {
+        window.flight = window.flight || {};
+        window.flight.registry = registry;
+        compose.mixin(registry, [advice.withAdvice]);
+
+        registry.before('trigger', function (node, event, data) {
             /**
              * event
              * event, data
@@ -272,11 +270,11 @@ function getSelectedComponent() {
     // Devtools doesn't let you select the document, so use the <html> node
     var target = ($0 === document.lastChild ? document : $0);
 
-    if (!window.flightRegistry) {
+    if (!window.flight.registry) {
         return new Error('Cannot find registry.')
     }
 
-    return (_F = window.flightRegistry.components.filter(function (componentInfo) {
+    return (_F = window.flight.registry.components.filter(function (componentInfo) {
         return componentInfo.isAttachedTo(target);
     }).reduce(function (memo, componentInfo) {
         if (componentInfo.component.toString().length) {
@@ -302,11 +300,11 @@ function getDetachedComponents() {
         };
     }
 
-    if (!window.flightRegistry) {
+    if (!window.flight.registry) {
         return new Error('Cannot find registry.')
     }
 
-    return (_F = window.flightRegistry.components.filter(function (componentInfo) {
+    return (_F = window.flight.registry.components.filter(function (componentInfo) {
         return componentInfo.attachedTo.some(function (elem) {
             return (elem !== document && !elem.parentNode);
         });
