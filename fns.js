@@ -6,17 +6,31 @@ function init() {
     if (window.flightSetup || !window.require) return;
     window.flightSetup = true;
 
+    function template(str, o) {
+        return str.replace(/{{([a-z_$]+)}}/gi, function (m, k) {
+            return o[k] || '';
+        });
+    }
 
-    function css() {/*
+    function templateEventElem() {/*
+        <a href="#"
+           class="flight-inspector-notifier__event"
+           data-action="{{action}}"
+           data-description="{{description}}">
+            {{action}} {{description}}
+        </a>
+    */}
+
+    function templateCss() {/*
         .flight-inspector-notifier {
             z-index: 100000;
             position: absolute;
             background: rgba(0,0,0,.5);
-            font: 12px/1.2 sans-serif;
+            font: 12px/1.2 monospace;
             color: white;
             text-shadow: 0 0 1px black;
             max-height: 100vh;
-            width: 12em;
+            width: 20em;
             overflow-y: scroll;
             overflow-x: hidden;
             border-bottom-right-radius: 4px;
@@ -49,9 +63,20 @@ function init() {
             color: white;
             text-decoration: none;
         }
+        .flight-inspector-notifier__event:before {
+            display: inline;
+            content: attr(data-count);
+            margin-right: 0.444em;
+        }
     */}
+
+    function funstr(fn) {
+        return fn.toString().split('\n').slice(1, -1).join('\n')
+    }
+
+
     $('body').append($('<style/>', {
-        text: css.toString().split('\n').slice(1, -1).join('\n')
+        text: funstr(templateCss)
     }))
 
     /**
@@ -61,6 +86,7 @@ function init() {
     var notifierMap = window.notifierMap = (window.notifierMap || {});
     function Notifier(position) {
         this.position = position;
+        this.eventData = new WeakMap();
 
         this.$elem = $('<div/>', {
             'class': 'flight-inspector-notifier',
@@ -71,26 +97,49 @@ function init() {
             wait: Notifier.EVENT_WAIT
         });
 
-        this.$elem.on('mouseenter', function () {
-            this.eventQueue.pause();
-        }.bind(this));
-
-        this.$elem.on('mouseleave', function () {
-            this.eventQueue.unpause();
-        }.bind(this));
+        this.$elem
+            .on('mouseenter', function () {
+                this.eventQueue.pause();
+            }.bind(this))
+            .on('mouseleave', function () {
+                this.eventQueue.unpause();
+            }.bind(this))
+            .on('click', '.flight-inspector-notifier__event', function (e) {
+                if (this.eventData.has(e.currentTarget)) {
+                    var event = this.eventData.get(e.currentTarget);
+                    console.info('%i %s %s %O', event.data.length, event.action, event.description, event.data);
+                }
+            }.bind(this));
     }
 
-    Notifier.prototype.add = function (text, data) {
-        var $eventElem = $('<a/>', {
-            'class': 'flight-inspector-notifier__event',
-            text: text,
-            href: '#'
-        }).appendTo(this.$elem);
+    Notifier.prototype.add = function (event) {
+        var $eventElem = this.$elem.find('a').last();
+        var mostRecent
+        var mostRecentAction = $eventElem.attr('data-action');
+        var mostRecentDesc = $eventElem.attr('data-description');
+        var mostRecentCount = ~~$eventElem.attr('data-count');
 
-        $eventElem.on('click', function () {
-            console.info(data);
+        if (!$eventElem.length ||
+            event.action !== mostRecentAction ||
+            event.description !== mostRecentDesc) {
+            $eventElem = $(template(funstr(templateEventElem), event)).appendTo(this.$elem);
+            mostRecentCount = 0;
+        }
+
+        $eventElem.attr('data-count', mostRecentCount + 1);
+
+        var eventElem = $eventElem[0];
+
+        // Save the events data
+        var matchedEventsData = (this.eventData.get(eventElem) || {
+            action: event.action,
+            description: event.description,
+            data: []
         });
+        matchedEventsData.data.push(event);
+        this.eventData.set(eventElem, matchedEventsData);
 
+        // TODO This will clear the element even if it's updating
         this.eventQueue.push(function () {
             $eventElem.remove();
         });
@@ -181,16 +230,21 @@ function init() {
             var position = {top: 0, left: 0}
             // Hack around weird jQuery issue
             if (node !== document) {
-                position = $(node).position();
+                position = $(node).offset();
             }
             position.top = Math.max(0, ~~position.top);
             position.left = Math.max(0, ~~position.left);
             try {
                 var notifier = Notifier.getOrCreateForPosition(position);
-                notifier.add(event, {
-                    event: event,
-                    node: node,
-                    data: data
+                notifier.add({
+                    action: 'trigger',
+                    description: event,
+                    data: {
+                        component: this,
+                        event: event,
+                        node: node,
+                        data: data
+                    }
                 });
             } catch (e) {
                 console.error(e.stack);
