@@ -13,7 +13,11 @@ function init() {
     }
 
     function templateNotifierElem() {/*
-        <div class="flight-inspector-notifier"></div>
+        <div class="flight-inspector-notifier">
+            <div class="flight-inspector-notifier__menu">
+                <button class="flight-inspector-notifier__clear">&times;</button>
+            </div>
+        </div>
     */}
 
     function templateEventElem() {/*
@@ -46,7 +50,8 @@ function init() {
         .flight-inspector-notifier:hover {
             opacity: 1;
         }
-        .flight-inspector-notifier__event {
+        .flight-inspector-notifier__event,
+        .flight-inspector-notifier__menu {
             background: rgba(0,0,0,.7);
             display: block;
             color: white;
@@ -85,6 +90,30 @@ function init() {
             height: 0.2em;
             pointer-event: none;
         }
+        .flight-inspector-notifier__menu {
+            padding: 0.1em 0.2em;
+        }
+        .flight-inspector-notifier__menu:last-child {
+            display: none;
+        }
+        .flight-inspector-notifier__clear {
+            transition: all 100ms linear;
+            border: none;
+            background: #ccd6dd;
+            color: black;
+            float: right;
+            text-align: center;
+            height: 1.5em;
+            width: 1.5em;
+            border-radius: 999px;
+        }
+        .flight-inspector-notifier__clear:hover {
+            color: white;
+            background: #8899a6;
+        }
+        .flight-inspector-notifier__clear:active {
+            background: #66757f;
+        }
     */}
 
     function funstr(fn) {
@@ -115,11 +144,13 @@ function init() {
         Notifier.updateQueue.push(this.updateDimensions.bind(this));
 
         this.$elem
-            .on('mouseenter', function () {
+            .on('mouseenter', function (e) {
                 this.eventQueue.pause();
+                e.stopPropagation();
             }.bind(this))
-            .on('mouseleave', function () {
+            .on('mouseleave', function (e) {
                 this.eventQueue.unpause();
+                e.stopPropagation();
             }.bind(this))
             .on('click', '.flight-inspector-notifier__event', function (e) {
                 if (this.eventData.has(e.currentTarget)) {
@@ -135,7 +166,11 @@ function init() {
                     );
                 }
                 e.preventDefault();
-            }.bind(this));
+            }.bind(this))
+            .on('click', '.flight-inspector-notifier__clear', function (e) {
+                this.eventQueue.blitz();
+                e.preventDefault();
+            }.bind(this))
 
         this.updateDimensions();
     }
@@ -171,8 +206,6 @@ function init() {
         this.eventQueue.push(function () {
             $eventElem.remove();
         });
-
-        this.updateDimensions();
     };
 
     Notifier.prototype.getPositionFromNode = function (node) {
@@ -181,6 +214,8 @@ function init() {
         if (node !== document) {
             position = $(node).offset();
         }
+        position.top = Math.min(Math.max(0, position.top), window.innerHeight);
+        position.left = Math.min(Math.max(0, position.left), window.innerWidth);
         return position;
     };
 
@@ -197,7 +232,7 @@ function init() {
 
     Notifier.EVENT_TIMEOUT = 250;
     Notifier.EVENT_WAIT = 3000;
-    Notifier.UPDATE_TIMEOUT = 500;
+    Notifier.UPDATE_TIMEOUT = 50;
     Notifier.elementMap = new WeakMap();
 
     Notifier.getOrCreateForNode = function (node) {
@@ -268,6 +303,18 @@ function init() {
     TickQueue.prototype.hasItems = function () {
         return !!this.queue.length;
     };
+    TickQueue.prototype.blitz = function () {
+        var length = this.queue.length;
+        while (length--) {
+            try {
+                var fn = this.queue.shift();
+                fn();
+                if (this.loop) {
+                    this.queue.push(fn);
+                }
+            } catch (e) {}
+        }
+    };
 
     /**
      * Hook Flight
@@ -318,11 +365,14 @@ function init() {
 
                 if (!currentGroup.length) {
                     setTimeout(function () {
-                        notifier.add({
-                            action: 'sync-group',
-                            description: 'Synchronous group of events',
-                            data: currentGroup
-                        });
+                        // only add a tick indicator if the group was bigger than one
+                        if (currentGroup.length > 1) {
+                            notifier.add({
+                                action: 'sync-group',
+                                description: 'Synchronous group of events',
+                                data: currentGroup
+                            });
+                        }
                         currentGroup = [];
                     }, 0);
                 }
