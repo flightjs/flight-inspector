@@ -6,6 +6,8 @@ Devtools extension for developing with Twitter's Flight framework. Currently wor
 
 If you don't have debug mode on, you can use a [patched version](https://github.com/flightjs/flight/pull/287) of Flight.
 
+You will also need the **#enable-javascript-harmony** flag on in Chrome.
+
 ## Installing from Source
 
 1.  Clone the repository: `git clone git://github.com/flightjs/flight-inspector`
