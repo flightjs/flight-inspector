@@ -28,6 +28,14 @@ a:active {
     padding: 1em;
     margin: 1em 0;
     border: 1px solid #e1e8ed;
+    overflow: hidden;
 }
 
-.form__input
+.form__group {
+    width: 50%;
+    float: left;
+}
+
+.form__group:nth-child(odd) {
+    padding-right: 1.5em;
+}

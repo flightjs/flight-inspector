@@ -12,6 +12,10 @@ function init() {
         });
     }
 
+    function templateNotifierElem() {/*
+        <div class="flight-inspector-notifier"></div>
+    */}
+
     function templateEventElem() {/*
         <a href="#"
            class="flight-inspector-notifier__event"
@@ -72,6 +76,10 @@ function init() {
             content: attr(data-count);
             margin-right: 0.444em;
         }
+        .flight-inspector-notifier__event--clicked,
+        .flight-inspector-notifier__event--clicked:hover {
+            color: rgba(255,255,255,0.8);
+        }
     */}
 
     function funstr(fn) {
@@ -87,19 +95,19 @@ function init() {
      * Notifier
      */
 
-    var notifierMap = window.notifierMap = (window.notifierMap || {});
-    function Notifier(position) {
-        this.position = position;
+    function Notifier(targetNode) {
+        this.targetNode = targetNode;
+        this.$targetNode = $(targetNode);
+        this.position = this.getPositionFromNode(this.targetNode);
         this.eventData = new WeakMap();
 
-        this.$elem = $('<div/>', {
-            'class': 'flight-inspector-notifier',
-            text: ''
-        }).css(position).appendTo(document.body);
+        this.$elem = $(funstr(templateNotifierElem), {}).appendTo(document.body);
 
         this.eventQueue = new TickQueue(Notifier.EVENT_TIMEOUT, {
             wait: Notifier.EVENT_WAIT
         });
+
+        Notifier.updateQueue.push(this.updateDimensions.bind(this));
 
         this.$elem
             .on('mouseenter', function () {
@@ -110,6 +118,7 @@ function init() {
             }.bind(this))
             .on('click', '.flight-inspector-notifier__event', function (e) {
                 if (this.eventData.has(e.currentTarget)) {
+                    e.currentTarget.classList.add('flight-inspector-notifier__event--clicked');
                     var event = this.eventData.get(e.currentTarget);
                     console.info(
                         '%i %s %s %O',
@@ -121,7 +130,10 @@ function init() {
                         })
                     );
                 }
+                e.preventDefault();
             }.bind(this));
+
+        this.updateDimensions();
     }
 
     Notifier.prototype.add = function (event) {
@@ -155,17 +167,53 @@ function init() {
         this.eventQueue.push(function () {
             $eventElem.remove();
         });
+
+        this.updateDimensions();
+    };
+
+    Notifier.prototype.getPositionFromNode = function (node) {
+        var position = {top: 0, left: 0}
+        // Hack around weird jQuery thing
+        if (node !== document) {
+            position = $(node).offset();
+        }
+        return position;
+    };
+
+    Notifier.prototype.updateDimensions = function () {
+        if (!this.eventQueue.hasItems()) {
+            return;
+        }
+        this.$elem
+            .css(this.getPositionFromNode(this.targetNode))
+            .css({
+                'max-width': this.$targetNode.innerWidth() + 'px'
+            });
     };
 
     Notifier.EVENT_TIMEOUT = 250;
     Notifier.EVENT_WAIT = 3000;
-    Notifier.getOrCreateForPosition = function (rawPosition) {
-        var position = Notifier.positionFromRaw(rawPosition);
-        return notifierMap[position] || (notifierMap[position] = new Notifier(rawPosition));
+    Notifier.UPDATE_TIMEOUT = 500;
+    Notifier.elementMap = new WeakMap();
+
+    Notifier.getOrCreateForNode = function (node) {
+        var notifier;
+        if (Notifier.elementMap.has(node)) {
+            notifier = Notifier.elementMap.get(node);
+        } else {
+            notifier = new Notifier(node);
+            Notifier.elementMap.set(node, notifier)
+        }
+        return notifier;
     };
+
     Notifier.positionFromRaw = function (rawPosition) {
         return rawPosition.top + ',' + rawPosition.left;
     };
+
+    Notifier.updateQueue = new TickQueue(Notifier.UPDATE_TIMEOUT, {
+        loop: true
+    });
 
     /**
      * TickQueue
@@ -178,6 +226,7 @@ function init() {
         this.paused = !!opts.paused;
         this.ticking = false;
         this.wait = opts.wait || 0;
+        this.loop = !!opts.loop;
     }
     TickQueue.prototype.tick = function (last, loop) {
         if (!loop && this.ticking) return;
@@ -188,7 +237,11 @@ function init() {
         }
         if (Date.now() - last > this.tickSpeed) {
             try {
-                this.queue.shift()();
+                var fn = this.queue.shift();
+                fn();
+                if (this.loop) {
+                    this.queue.push(fn);
+                }
             } catch (e) {}
             last = Date.now();
         }
@@ -207,6 +260,9 @@ function init() {
     };
     TickQueue.prototype.go = function (from) {
         requestAnimationFrame(this.tick.bind(this, from || Date.now(), false));
+    };
+    TickQueue.prototype.hasItems = function () {
+        return !!this.queue.length;
     };
 
     /**
@@ -237,15 +293,11 @@ function init() {
                 event = node;
                 node = this.node;
             }
-            var position = {top: 0, left: 0}
-            // Hack around weird jQuery issue
-            if (node !== document) {
-                position = $(node).offset();
+            if (node.jquery) {
+                node = node.get(0);
             }
-            position.top = Math.max(0, ~~position.top);
-            position.left = Math.max(0, ~~position.left);
             try {
-                var notifier = Notifier.getOrCreateForPosition(position);
+                var notifier = Notifier.getOrCreateForNode(node);
                 notifier.add({
                     action: 'trigger',
                     description: event,

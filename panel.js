@@ -10,10 +10,19 @@ $('.js-reload').addEventListener('click', function () {
 var $toggler = $('.js-toggle-event-notifier')
 $toggler.addEventListener('click', function () {
     inject(toggleEventNotifier)
+        .then(updateToggler)
         .catch(fail);
 });
-inject(getEventNotifierToggleState)
-    .then(function (isOn) {
-        $toggler.checked = isOn;
-    })
-    .catch(fail)
+
+function updateToggler() {
+    inject(getEventNotifierToggleState)
+        .then(function (isOn) {
+            $toggler.checked = isOn;
+        })
+        .catch(fail)
+}
+updateToggler();
+chrome.devtools.panels.elements.onSelectionChanged.addListener(function () {
+    updateToggler();
+});
+
