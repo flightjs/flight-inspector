@@ -155,7 +155,7 @@ function init() {
         .flight-inspector-notifier__events {
             font: 12px/1.2 monospace;
             border-top: 1px solid #ccd6dd;
-            max-height: 10em;
+            max-height: 100vh;
             overflow-y: scroll;
         }
 
@@ -214,7 +214,14 @@ function init() {
 
     $('body').append($('<style/>', {
         text: funstr(templateCss)
-    }))
+    }));
+
+    $(document).on('flightInspectorClearNotifiers', function () {
+        Notifier.notifiers.forEach(function (notifier) {
+            notifier.teardown();
+        });
+        Notifier.notifiers = [];
+    })
 
     /**
      * Notifier
@@ -355,7 +362,7 @@ function init() {
         var notifierAtPosition = Notifier.positionMap.get(Notifier.positionFromRaw(newPosition));
         var conflicted = (notifierAtPosition && notifierAtPosition !== this);
         while (conflicted) {
-            newPosition.left += this.$elem.width() * 1.1;
+            newPosition.left += this.$elem.width() + 1;
             notifierAtPosition = Notifier.positionMap.get(Notifier.positionFromRaw(newPosition));
             conflicted = (notifierAtPosition && notifierAtPosition !== this);
         }
@@ -371,11 +378,19 @@ function init() {
         this.lastTargetNodePosition = targetNodePosition;
     };
 
+    Notifier.prototype.teardown = function () {
+        console.log('clearing', this);
+        Notifier.positionMap.delete(Notifier.positionFromRaw(this.$elem.offset()));
+        Notifier.elementMap.delete(this.targetNode);
+        this.$elem.remove();
+    };
+
     Notifier.EVENT_TIMEOUT = 250;
     Notifier.EVENT_WAIT = 3000;
     Notifier.UPDATE_TIMEOUT = 50;
     Notifier.elementMap = new WeakMap();
     Notifier.positionMap = new Map();
+    Notifier.notifiers = [];
 
     Notifier.getOrCreateForNode = function (node) {
         var notifier;
@@ -383,6 +398,7 @@ function init() {
             notifier = Notifier.elementMap.get(node);
         } else {
             notifier = new Notifier(node);
+            Notifier.notifiers.push(notifier);
             Notifier.elementMap.set(node, notifier)
         }
         return notifier;
@@ -597,4 +613,7 @@ function toggleEventNotifier() {
 }
 function getEventNotifierToggleState() {
     return document.documentElement.classList.contains('show-flight-inspector-notifier');
+}
+function clearEventNotifiers() {
+    $(document).trigger('flightInspectorClearNotifiers');
 }

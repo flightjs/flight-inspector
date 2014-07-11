@@ -6,6 +6,10 @@ var $$ = document.querySelectorAll.bind(document);
 $('.js-reload').addEventListener('click', function () {
     location.reload();
 });
+$('.js-clear-event-notifiers').addEventListener('click', function () {
+    inject(clearEventNotifiers)
+        .catch(fail);
+});
 
 var $toggler = $('.js-toggle-event-notifier')
 $toggler.addEventListener('click', function () {
