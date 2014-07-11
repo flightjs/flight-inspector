@@ -49,7 +49,9 @@ function init() {
             color: #292f33;
             box-shadow: 2px 2px 5px rgba(0,0,0,.3);
             z-index: 10000;
-            transition: background-color 100ms linear;
+            transition: background-color 100ms linear,
+                        top 100ms ease-in-out,
+                        left 100ms ease-in-out;
         }
 
         .flight-inspector-notifier--closed {
