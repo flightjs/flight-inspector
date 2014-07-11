@@ -13,10 +13,15 @@ function init() {
     }
 
     function templateNotifierElem() {/*
-        <div class="flight-inspector-notifier">
+        <div class="flight-inspector-notifier flight-inspector-notifier--closed">
             <div class="flight-inspector-notifier__menu">
+                <h1 class="flight-inspector-notifier__summary">{{summary}}</h1>
+                <span class="flight-inspector-notifier__count"></span>
+                <button class="flight-inspector-notifier__open">&rarr;</button>
+                <button class="flight-inspector-notifier__close">&larr;</button>
                 <button class="flight-inspector-notifier__clear">&times;</button>
             </div>
+            <div class="flight-inspector-notifier__events"></div>
         </div>
     */}
 
@@ -35,84 +40,168 @@ function init() {
         }
         .flight-inspector-notifier {
             display: none;
-            z-index: 100000;
+            font: 12px/1.2 Lucida Grande, sans-serif;
+            width: 25em;
+            background: rgba(255,255,255,.9);
             position: absolute;
-            font: 12px/1.2 monospace;
-            color: white;
-            text-shadow: 0 0 1px black;
-            max-height: 100vh;
-            width: 20em;
-            overflow-y: scroll;
-            overflow-x: hidden;
-            border-top: none;
-            opacity: 0.3;
+            top: 0;
+            left: 0;
+            color: #292f33;
+            box-shadow: 2px 2px 5px rgba(0,0,0,.3);
+            z-index: 10000;
+            transition: background-color 100ms linear;
         }
-        .flight-inspector-notifier:hover {
-            opacity: 1;
+
+        .flight-inspector-notifier--closed {
+            width: 5em;
         }
-        .flight-inspector-notifier__event,
+        .flight-inspector-notifier--open {
+            background-color: white;
+        }
+
         .flight-inspector-notifier__menu {
-            background: rgba(0,0,0,.7);
+            position: relative;
+            padding: 0 0 0 0.3em;
+            display: flex;
+        }
+        .flight-inspector-notifier__menu button {
+            font: 12px/1.2 monospace;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            transition: background-color 100ms linear;
+            margin: 0;
+        }
+
+        .flight-inspector-notifier__menu:beforeXXXX {
+            height: 0;
+            width: 0;
+            border: 0.3em solid #ccd6dd;
+            border-right-color: transparent;
+            border-bottom-color: transparent;
             display: block;
-            color: white;
-            text-decoration: none;
-            padding: 0.1em 0.2em;
-            border-top: 1px solid black;
+            position: absolute;
+            content: '';
+            z-index: -1;
+            top: -0.3em;
+            left: 0.5em;
+            -webkit-transform: rotate(45deg);
+        }
+
+        .flight-inspector-notifier__open,
+        .flight-inspector-notifier__close {
+            background-color: #edf5e9;
+        }
+        .flight-inspector-notifier__open:hover,
+        .flight-inspector-notifier__close:hover {
+            background-color: #c6e5b3;
+        }
+
+        .flight-inspector-notifier__clear {
+            background-color: #ffe8eb;
+            display: none !important;
+        }
+        .flight-inspector-notifier__clear:hover {
+            background-color: #f4abba;
+        }
+
+        .flight-inspector-notifier__open,
+        .flight-inspector-notifier__close,
+        .flight-inspector-notifier__clear {
+            display: inline-block;
+            flex: 1;
+        }
+
+        .flight-inspector-notifier__summary {
+            margin: 0;
+            font-size: 1em;
+            display: inline-block;
+            flex: 6;
             overflow: hidden;
             white-space: nowrap;
             word-wrap: normal;
             text-overflow: ellipsis;
+            line-height: 1.5;
+        }
+
+        .flight-inspector-notifier__count {
+            display: inline-block;
+            width: 2.5em;
+            flex: 2;
+            line-height: 1.5;
+        }
+
+        .flight-inspector-notifier__clear {
+        }
+        .flight-inspector-notifier__clear:hover {
+        }
+        .flight-inspector-notifier__clear:active {
+        }
+
+        .flight-inspector-notifier--open .flight-inspector-notifier__open,
+        .flight-inspector-notifier--open .flight-inspector-notifier__count {
+            display: none;
+        }
+
+        .flight-inspector-notifier--closed .flight-inspector-notifier__summary,
+        .flight-inspector-notifier--closed .flight-inspector-notifier__close,
+        .flight-inspector-notifier--closed .flight-inspector-notifier__clear,
+        .flight-inspector-notifier--closed .flight-inspector-notifier__events {
+            display: none;
+        }
+
+        .flight-inspector-notifier__events {
+            font: 12px/1.2 monospace;
+            border-top: 1px solid #ccd6dd;
+            max-height: 10em;
+            overflow-y: scroll;
+        }
+
+        .flight-inspector-notifier__event {
+            display: block;
+            overflow: hidden;
+            white-space: nowrap;
+            word-wrap: normal;
+            text-overflow: ellipsis;
+            text-decoration: none;
+            color: #292f33;
+            padding: 0.1em 0.3em;
             transition: background-color 100ms linear;
+            border-top: 1px solid #ccd6dd;
+        }
+        .flight-inspector-notifier__event:first-child {
+            border-top: none;
         }
         .flight-inspector-notifier__event:hover {
-            background-color: black;
-            color: white;
-            text-decoration: none;
+            color: black;
+            background-color: #edf5e9;
         }
         .flight-inspector-notifier__event:active {
-            background-color: rgba(0,200,0,1);
-            color: white;
-            text-decoration: none;
+            background-color: #c6e5b3;
         }
         .flight-inspector-notifier__event:before {
             display: inline;
             content: attr(data-count);
-            margin-right: 0.444em;
+            margin-right: 0.1em;
         }
         .flight-inspector-notifier__event--clicked,
         .flight-inspector-notifier__event--clicked:hover {
-            color: rgba(255,255,255,0.8);
+            color: #66757f;
         }
         .flight-inspector-notifier__event[data-action="sync-group"] {
             color: transparent;
-            text-shadow: none;
-            background: rgba(100,255,100,.4);
-            height: 0.2em;
-            pointer-event: none;
-        }
-        .flight-inspector-notifier__menu {
-            padding: 0.1em 0.2em;
-        }
-        .flight-inspector-notifier__menu:last-child {
-            display: none;
-        }
-        .flight-inspector-notifier__clear {
+            background: #fff8e8;
+            height: 0.667em;
             transition: all 100ms linear;
-            border: none;
-            background: #ccd6dd;
-            color: black;
-            float: right;
-            text-align: center;
-            height: 1.5em;
-            width: 1.5em;
-            border-radius: 999px;
         }
-        .flight-inspector-notifier__clear:hover {
-            color: white;
-            background: #8899a6;
+        .flight-inspector-notifier__event[data-action="sync-group"]:hover {
+            background: #ffe8b6;
         }
-        .flight-inspector-notifier__clear:active {
-            background: #66757f;
+        .yft {
+            -webkit-animation: target-fade 1s 1;
+        }
+        @-webkit-keyframes target-fade {
+            from { background-color: #ffcc4d; }
         }
     */}
 
@@ -133,9 +222,22 @@ function init() {
         this.targetNode = targetNode;
         this.$targetNode = $(targetNode);
         this.position = this.getPositionFromNode(this.targetNode);
+        this.lastTargetNodePosition = this.position;
         this.eventData = new WeakMap();
 
-        this.$elem = $(funstr(templateNotifierElem), {}).appendTo(document.body);
+        this.$elem =
+            $(template(funstr(templateNotifierElem), {
+                summary: [
+                    targetNode.nodeName.toLowerCase(),
+                    (targetNode.id ? '#' + targetNode.id : ''),
+                    (targetNode.classList && targetNode.classList.length ? '.' + targetNode.classList.toString().split(' ').join('.') : '')
+                ].join('')
+            }))
+            .css(this.position)
+            .appendTo(document.body);
+
+        this.$events = this.$elem.find('.flight-inspector-notifier__events');
+        this.$count = this.$elem.find('.flight-inspector-notifier__count');
 
         this.eventQueue = new TickQueue(Notifier.EVENT_TIMEOUT, {
             wait: Notifier.EVENT_WAIT
@@ -145,11 +247,17 @@ function init() {
 
         this.$elem
             .on('mouseenter', function (e) {
-                this.eventQueue.pause();
+                // this.eventQueue.pause();
+                this.$elem.css({
+                    'z-index': '1000000'
+                })
                 e.stopPropagation();
             }.bind(this))
             .on('mouseleave', function (e) {
-                this.eventQueue.unpause();
+                // this.eventQueue.unpause();
+                this.$elem.css({
+                    'z-index': false
+                })
                 e.stopPropagation();
             }.bind(this))
             .on('click', '.flight-inspector-notifier__event', function (e) {
@@ -167,16 +275,22 @@ function init() {
                 }
                 e.preventDefault();
             }.bind(this))
-            .on('click', '.flight-inspector-notifier__clear', function (e) {
-                this.eventQueue.blitz();
+            .on('click', '.flight-inspector-notifier__open, .flight-inspector-notifier__close', function (e) {
+                this.$elem
+                    .toggleClass('flight-inspector-notifier--open')
+                    .toggleClass('flight-inspector-notifier--closed');
                 e.preventDefault();
             }.bind(this))
+            // .on('click', '.flight-inspector-notifier__clear', function (e) {
+            //     this.eventQueue.blitz();
+            //     e.preventDefault();
+            // }.bind(this))
 
         this.updateDimensions();
     }
 
     Notifier.prototype.add = function (event) {
-        var $eventElem = this.$elem.find('a').last();
+        var $eventElem = this.$events.find('a').last();
         var mostRecent
         var mostRecentAction = $eventElem.attr('data-action');
         var mostRecentDesc = $eventElem.attr('data-description');
@@ -185,7 +299,8 @@ function init() {
         if (!$eventElem.length ||
             event.action !== mostRecentAction ||
             event.description !== mostRecentDesc) {
-            $eventElem = $(template(funstr(templateEventElem), event)).appendTo(this.$elem);
+            $eventElem = $(template(funstr(templateEventElem), event))
+                .appendTo(this.$events);
             mostRecentCount = 0;
         }
 
@@ -202,10 +317,16 @@ function init() {
         matchedEventsData.events.push(event);
         this.eventData.set(eventElem, matchedEventsData);
 
+        // Update our summary count
+        var totalCount = ~~this.$count.text();
+        this.$count.text(totalCount + 1);
+        this.$elem.removeClass('yft');
+        setTimeout(this.$elem.addClass.bind(this.$elem, 'yft'), 0);
+
         // TODO This will clear the element even if it's updating
-        this.eventQueue.push(function () {
-            $eventElem.remove();
-        });
+        // this.eventQueue.push(function () {
+        //     $eventElem.remove();
+        // });
     };
 
     Notifier.prototype.getPositionFromNode = function (node) {
@@ -220,20 +341,39 @@ function init() {
     };
 
     Notifier.prototype.updateDimensions = function () {
-        if (!this.eventQueue.hasItems()) {
-            return;
+        // Find where we *should* be
+        var currentPosition = this.$elem.offset();
+        var targetNodePosition = this.getPositionFromNode(this.targetNode);
+
+        var targetHasMoved = (targetNodePosition.top !== this.lastTargetNodePosition.top ||
+                              targetNodePosition.left !== this.lastTargetNodePosition.left);
+
+        // Don't take up the same space as someone else
+        var newPosition = (targetHasMoved ? targetNodePosition : currentPosition);
+        var notifierAtPosition = Notifier.positionMap.get(Notifier.positionFromRaw(newPosition));
+        var conflicted = (notifierAtPosition && notifierAtPosition !== this);
+        while (conflicted) {
+            newPosition.left += this.$elem.width() * 1.1;
+            notifierAtPosition = Notifier.positionMap.get(Notifier.positionFromRaw(newPosition));
+            conflicted = (notifierAtPosition && notifierAtPosition !== this);
         }
-        this.$elem
-            .css(this.getPositionFromNode(this.targetNode))
-            .css({
-                'max-width': this.$targetNode.innerWidth() + 'px'
-            });
+
+        // Forget about our old position
+        Notifier.positionMap.delete(Notifier.positionFromRaw(currentPosition));
+
+        // Remember out new position
+        Notifier.positionMap.set(Notifier.positionFromRaw(newPosition), this);
+
+        // Move the element
+        this.$elem.css(newPosition);
+        this.lastTargetNodePosition = targetNodePosition;
     };
 
     Notifier.EVENT_TIMEOUT = 250;
     Notifier.EVENT_WAIT = 3000;
     Notifier.UPDATE_TIMEOUT = 50;
     Notifier.elementMap = new WeakMap();
+    Notifier.positionMap = new Map();
 
     Notifier.getOrCreateForNode = function (node) {
         var notifier;
