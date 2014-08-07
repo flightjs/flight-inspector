@@ -6,6 +6,13 @@ function init() {
     if (window.flightSetup || !window.require) return;
     window.flightSetup = true;
 
+    function log() {
+        console.info.apply(console, ['Flight Inspector:'].concat([].slice.call(arguments)));
+    }
+    function warn() {
+        console.warn.apply(console, ['Flight Inspector:'].concat([].slice.call(arguments)));
+    }
+
     function template(str, o) {
         return str.replace(/{{([a-z_$]+)}}/gi, function (m, k) {
             return o[k] || '';
@@ -479,31 +486,29 @@ function init() {
 
     function getFlightRegistry(cb) {
         if (window.DEBUG) {
+            log('found Flight via window.DEBUG')
             return setTimeout(cb.bind(this, window.DEBUG.registry), 0);
         }
         if (window.flight) {
+            log('found Flight via window.flight')
             return setTimeout(cb.bind(this, window.flight.registry), 0);
         }
-        setTimeout(getFlightRegistry.bind(this, cb), 20);
-        // require(['flight/lib/registry'], cb)
-    }
-
-    function waitForFlightDebugMode(cb) {
-        function wait(registry) {
-            if (registry.before) {
-                console.log('Found Flight & registry debug mode.')
-                return cb(registry);
-            }
-            setTimeout(wait.bind(null, registry), 20);
+        if (window.require) {
+            log('found Flight via require')
+            return require(['flight/lib/registry'], cb);
         }
-        getFlightRegistry(wait);
+        setTimeout(getFlightRegistry.bind(this, cb), 20);
     }
 
-    waitForFlightDebugMode(function (registry) {
+    getFlightRegistry(function (registry) {
         window.flight = window.flight || {};
         window.flight.registry = registry;
 
         var currentGroup = [];
+
+        if (!registry.before) {
+            return warn('registry does not have advice, so the event overlay will not work');
+        }
 
         registry.before('trigger', function (node, event, data) {
             /**

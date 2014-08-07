@@ -1,6 +1,7 @@
 {
   "name": "Flight Inspector",
-  "version": "1.0",
+  "version": "1.1",
+  "update_url": "http://go/chrome-ext/update",
   "description": "Runtime utility for developing with the Flight framework.",
   "devtools_page": "devtools.html",
   "permissions": ["tabs"],
