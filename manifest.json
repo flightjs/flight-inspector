@@ -1,8 +1,11 @@
 {
   "name": "Flight Inspector",
-  "version": "0.1",
+  "version": "1.0",
   "description": "Runtime utility for developing with the Flight framework.",
   "devtools_page": "devtools.html",
   "permissions": ["tabs"],
-  "manifest_version": 2
+  "manifest_version": 2,
+  "icons": {
+        "128": "logo-128.png"
+    }
 }

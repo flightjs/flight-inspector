@@ -379,7 +379,6 @@ function init() {
     };
 
     Notifier.prototype.teardown = function () {
-        console.log('clearing', this);
         Notifier.positionMap.delete(Notifier.positionFromRaw(this.$elem.offset()));
         Notifier.elementMap.delete(this.targetNode);
         this.$elem.remove();
@@ -478,17 +477,31 @@ function init() {
      * Hook Flight
      */
 
-    function getFlight(cb) {
-        if (window.flight) {
-            return setTimeout(cb.bind(this, window.flight.registry, window.flight.advice, window.flight.compose), 0);
+    function getFlightRegistry(cb) {
+        if (window.DEBUG) {
+            return setTimeout(cb.bind(this, window.DEBUG.registry), 0);
         }
-        require(['flight/lib/registry', 'flight/lib/advice', 'flight/lib/compose'], cb)
+        if (window.flight) {
+            return setTimeout(cb.bind(this, window.flight.registry), 0);
+        }
+        setTimeout(getFlightRegistry.bind(this, cb), 20);
+        // require(['flight/lib/registry'], cb)
     }
 
-    getFlight(function (registry, advice, compose) {
+    function waitForFlightDebugMode(cb) {
+        function wait(registry) {
+            if (registry.before) {
+                console.log('Found Flight & registry debug mode.')
+                return cb(registry);
+            }
+            setTimeout(wait.bind(null, registry), 20);
+        }
+        getFlightRegistry(wait);
+    }
+
+    waitForFlightDebugMode(function (registry) {
         window.flight = window.flight || {};
         window.flight.registry = registry;
-        compose.mixin(registry, [advice.withAdvice]);
 
         var currentGroup = [];
 
