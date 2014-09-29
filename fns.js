@@ -3,7 +3,10 @@
  */
 
 function init() {
-    if (window.flightSetup || !window.require) return;
+    if (window.flightSetup || (!window.require && !(window.DEBUG && window.DEBUG.registry))) {
+      return;
+    }
+
     window.flightSetup = true;
 
     function log() {
@@ -217,6 +220,7 @@ function init() {
     function funstr(fn) {
         return fn.toString().split('\n').slice(1, -1).join('\n')
     }
+
 
 
     $('body').append($('<style/>', {
@@ -485,7 +489,7 @@ function init() {
      */
 
     function getFlightRegistry(cb) {
-        if (window.DEBUG) {
+        if (window.DEBUG && window.DEBUG.registry) {
             log('found Flight via window.DEBUG')
             return setTimeout(cb.bind(this, window.DEBUG.registry), 0);
         }
